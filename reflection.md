@@ -2,15 +2,28 @@
 
 ## 1. System Design
 
+**Three core actions a user should be able to perform:**
+
+1. **Add a pet** — enter a pet's name, species, and basic details so the app knows who it is planning for.
+2. **Add a care task to a pet** — record something that needs to happen (e.g. a walk, feeding, or medication) along with how long it takes and how important it is.
+3. **Generate today's daily plan** — produce an ordered schedule that fits the owner's available time, and read the explanation of why each task was chosen and placed where it is.
+
 **a. Initial design**
 
-- Briefly describe your initial UML design.
-- What classes did you include, and what responsibilities did you assign to each?
+My initial UML has four core classes plus one small helper:
+
+- **Owner** — the top-level entity. Holds the owner's name, scheduling constraints (`available_minutes`, `preferred_start`), and the list of pets. Responsible for managing pets (`add_pet`), routing tasks to the right pet (`add_task`), and gathering every task across all pets (`all_tasks`).
+- **Pet** — a `dataclass` holding identity info (name, species, breed, age) and its own list of tasks. Responsible only for owning its tasks (`add_task`); it is mostly a data container.
+- **Task** — a `dataclass` representing one unit of care (title, duration, priority, category, recurrence, optional preferred time). Knows how to rank its own priority (`priority_rank`).
+- **Scheduler** — the "brains." Given a list of tasks and a time budget, it sorts them (`sort_tasks`), expands recurring tasks for a given day (`expand_recurring`), builds the timed plan (`build_plan`), detects overlap conflicts (`detect_conflicts`), and explains the result (`explain_plan`).
+- **ScheduledTask** — a small `dataclass` that wraps a `Task` with a concrete `start_time`, `end_time`, and a `reason`. This keeps the original `Task` immutable-ish and gives the "explain the plan" requirement a clean place to live.
+
+Relationships: an Owner *has many* Pets, a Pet *has many* Tasks, and the Scheduler *reads* Tasks and *produces* ScheduledTasks. I deliberately kept data (Pet/Task) separate from behavior (Owner/Scheduler) so the scheduling logic stays in one place and is easy to test on its own.
 
 **b. Design changes**
 
-- Did your design change during implementation?
-- If yes, describe at least one change and why you made it.
+<!-- Fill in during/after implementation (Phases 2-5). -->
+- One change I made after AI review: I added the **`ScheduledTask`** class rather than mutating `Task` objects with start/end times. The AI pointed out that storing schedule-specific fields on `Task` would tangle "what the task is" with "when it happened to be placed today," making recurring tasks and re-planning harder. Separating them keeps `Task` reusable across days.
 
 ---
 
