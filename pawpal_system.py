@@ -141,10 +141,14 @@ class Scheduler:
         self.day_start = day_start
 
     def sort_tasks(self, tasks: list[Task]) -> list[Task]:
-        """Order tasks by priority (high first), then shorter duration first."""
+        """Order tasks by priority (high first), then by preferred time, then duration."""
         return sorted(
             tasks,
-            key=lambda t: (-t.priority_rank(), t.duration_minutes),
+            key=lambda t: (
+                -t.priority_rank(),
+                _to_minutes(t.preferred_time) if t.preferred_time else 24 * 60,
+                t.duration_minutes,
+            ),
         )
 
     def sort_by_time(self, tasks: list[Task]) -> list[Task]:

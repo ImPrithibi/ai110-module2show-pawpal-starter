@@ -143,6 +143,20 @@ The scheduling intelligence lives in the `Scheduler` class in `pawpal_system.py`
 | Conflict handling | `Scheduler.detect_conflicts()` | Flags tasks that claim the same `preferred_time` slot and returns warning strings (never raises) — see reflection §2b for the exact-match tradeoff |
 | Recurring tasks | `Scheduler.mark_task_complete()`, `Task.next_occurrence()` | Completing a `daily`/`weekly` task auto-creates the next occurrence with `due_date` advanced via `datetime.timedelta` (`once` tasks return `None`) |
 
+## 🚀 Optional Extensions
+
+### Challenge 3 — Priority-based scheduling
+
+`Scheduler.sort_tasks()` sorts by **priority first, then preferred time, then duration**, so within a priority band tasks still fall in chronological order. `build_plan()` uses this ordering to decide which tasks to keep when the time budget is tight.
+
+```
+Priority-first, then time:
+  [  high] 08:00  Morning walk
+  [  high] 12:00  Meds
+  [medium] 09:00  Litter scoop
+  [   low] 17:00  Evening play
+```
+
 ## 🎬 Demo Walkthrough
 
 ### Main UI features
