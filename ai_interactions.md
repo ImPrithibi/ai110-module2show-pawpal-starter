@@ -28,10 +28,22 @@ I verified the boundary behavior myself with a quick scratch script before trust
 
 > Compare two different prompts (or two different models) on the same task.
 
+> **TODO (do this yourself with real models):** This section must contain genuine
+> outputs from two *different* AI tools — do not fabricate one. Suggested task:
+> ask each model to implement the weekly-recurrence rollover logic
+> (`Task.next_occurrence` for `recurrence="weekly"`), then fill in the table below
+> from their actual responses.
+
+**Suggested prompt (use the same one for both tools):**
+
+> "In this Python `Task` dataclass, implement a `next_occurrence()` method that
+> returns a new Task due one week later when `recurrence == 'weekly'`, advancing
+> `due_date` with `datetime.timedelta`. Return `None` for one-off tasks."
+
 | | Option A | Option B |
 |-|----------|----------|
-| **Model / tool used** | | |
-| **Prompt** | | |
+| **Model / tool used** | <!-- e.g. Claude --> | <!-- e.g. Gemini / ChatGPT / Copilot --> |
+| **Prompt** | (prompt above) | (prompt above) |
 | **Response summary** | | |
 | **What was useful** | | |
 | **Problems noticed** | | |
