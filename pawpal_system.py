@@ -213,6 +213,34 @@ class Scheduler:
                 seen[task.preferred_time] = task.title
         return warnings
 
+    def next_available_slot(
+        self,
+        plan: list[ScheduledTask],
+        duration_minutes: int,
+        day_end: str = "20:00",
+    ) -> str | None:
+        """Find the earliest 'HH:MM' where a task of the given length fits the plan.
+
+        Scans the gaps between already-scheduled tasks (and after the last one),
+        returning the first opening at least `duration_minutes` long before
+        `day_end`, or None if the day is too full.
+        """
+        start_bound = _to_minutes(self.day_start)
+        end_bound = _to_minutes(day_end)
+        # Busy intervals sorted by start time.
+        busy = sorted(
+            ((_to_minutes(s.start_time), _to_minutes(s.end_time)) for s in plan),
+            key=lambda pair: pair[0],
+        )
+        cursor = start_bound
+        for busy_start, busy_end in busy:
+            if busy_start - cursor >= duration_minutes:
+                return _to_hhmm(cursor)  # gap before this task is big enough
+            cursor = max(cursor, busy_end)
+        if end_bound - cursor >= duration_minutes:
+            return _to_hhmm(cursor)  # room after the last scheduled task
+        return None
+
     def explain_plan(self, plan: list[ScheduledTask]) -> str:
         """Produce a readable explanation of why the plan looks the way it does."""
         if not plan:

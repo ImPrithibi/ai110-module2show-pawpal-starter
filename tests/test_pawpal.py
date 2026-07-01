@@ -7,7 +7,7 @@ budget-aware daily plan — plus a few edge cases (no times, empty lists).
 
 from datetime import date
 
-from pawpal_system import Owner, Pet, Scheduler, Task
+from pawpal_system import Owner, Pet, ScheduledTask, Scheduler, Task
 
 
 # --- Task basics ----------------------------------------------------------
@@ -170,3 +170,28 @@ def test_build_plan_with_no_tasks_is_empty():
     scheduler = Scheduler()
     assert scheduler.build_plan([]) == []
     assert "No tasks" in scheduler.explain_plan([])
+
+
+# --- Extension: next available slot (Challenge 1) -------------------------
+
+def test_next_available_slot_finds_gap_between_tasks():
+    """A gap large enough between two scheduled tasks is returned."""
+    scheduler = Scheduler(day_start="08:00")
+    plan = [
+        ScheduledTask(Task("Walk", 30), "08:00", "08:30"),
+        ScheduledTask(Task("Meds", 15), "09:00", "09:15"),
+    ]
+    assert scheduler.next_available_slot(plan, 20) == "08:30"
+
+
+def test_next_available_slot_empty_plan_returns_day_start():
+    """With nothing scheduled, the first slot is the start of the day."""
+    scheduler = Scheduler(day_start="08:00")
+    assert scheduler.next_available_slot([], 30) == "08:00"
+
+
+def test_next_available_slot_returns_none_when_full():
+    """When the day has no room for the duration, None is returned."""
+    scheduler = Scheduler(day_start="08:00")
+    plan = [ScheduledTask(Task("Walk", 60), "08:00", "09:00")]
+    assert scheduler.next_available_slot(plan, 30, day_end="09:15") is None

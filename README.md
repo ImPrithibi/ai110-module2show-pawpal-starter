@@ -157,6 +157,16 @@ Priority-first, then time:
   [   low] 17:00  Evening play
 ```
 
+### Challenge 1 — "Next available slot" finder
+
+`Scheduler.next_available_slot(plan, duration_minutes, day_end)` scans the gaps between already-scheduled tasks (and the time after the last one) and returns the earliest `HH:MM` where a new task of the given length fits without overlapping — or `None` if the day is too full. This goes beyond back-to-back planning by reasoning about real time intervals.
+
+```
+Busy: 08:00–08:30 Walk, 09:00–09:15 Meds
+  next slot for a 20-min task -> 08:30   (fits the 08:30–09:00 gap)
+  next slot for a 40-min task -> 09:15   (no gap fits; goes after Meds)
+```
+
 ## 🎬 Demo Walkthrough
 
 ### Main UI features
