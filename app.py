@@ -1,6 +1,10 @@
+import os
+
 import streamlit as st
 
 from pawpal_system import Owner, Pet, Scheduler, Task
+
+DATA_FILE = "data.json"
 
 st.set_page_config(page_title="PawPal+", page_icon="🐾", layout="centered")
 
@@ -10,10 +14,28 @@ st.caption("A pet care planning assistant. Add your pets and their tasks, then g
 # --- Application "memory" -------------------------------------------------
 # Streamlit re-runs this script top-to-bottom on every interaction, so we
 # stash the Owner instance in st.session_state to keep data across reruns.
+# On first load we also restore any owner previously saved to data.json.
 if "owner" not in st.session_state:
-    st.session_state.owner = Owner(name="Jordan", available_minutes=90, preferred_start="08:00")
+    if os.path.exists(DATA_FILE):
+        st.session_state.owner = Owner.load_from_json(DATA_FILE)
+    else:
+        st.session_state.owner = Owner(name="Jordan", available_minutes=90, preferred_start="08:00")
 
 owner: Owner = st.session_state.owner
+
+# --- Persistence controls -------------------------------------------------
+with st.sidebar:
+    st.header("💾 Data")
+    st.caption(f"Pets and tasks persist to `{DATA_FILE}` between runs.")
+    if st.button("Save to disk"):
+        owner.save_to_json(DATA_FILE)
+        st.success("Saved.")
+    if st.button("Reload from disk"):
+        if os.path.exists(DATA_FILE):
+            st.session_state.owner = Owner.load_from_json(DATA_FILE)
+            st.rerun()
+        else:
+            st.warning("No saved data yet.")
 
 # --- Owner settings -------------------------------------------------------
 st.subheader("Owner & day settings")

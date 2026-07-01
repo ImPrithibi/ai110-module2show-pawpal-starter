@@ -195,3 +195,27 @@ def test_next_available_slot_returns_none_when_full():
     scheduler = Scheduler(day_start="08:00")
     plan = [ScheduledTask(Task("Walk", 60), "08:00", "09:00")]
     assert scheduler.next_available_slot(plan, 30, day_end="09:15") is None
+
+
+# --- Extension: JSON persistence (Challenge 2) ----------------------------
+
+def test_owner_json_round_trip(tmp_path):
+    """Saving then loading an owner reproduces its pets and tasks exactly."""
+    owner = Owner("Jordan", available_minutes=75, preferred_start="07:30")
+    owner.add_pet(Pet("Mochi", "dog", breed="Corgi", age_years=3))
+    owner.add_task("Mochi", Task("Walk", 30, priority="high",
+                                 recurrence="daily", preferred_time="08:00",
+                                 due_date=date(2026, 1, 1)))
+
+    path = tmp_path / "data.json"
+    owner.save_to_json(str(path))
+    loaded = Owner.load_from_json(str(path))
+
+    assert loaded.name == "Jordan"
+    assert loaded.available_minutes == 75
+    assert len(loaded.pets) == 1
+    task = loaded.pets[0].tasks[0]
+    assert task.title == "Walk"
+    assert task.priority == "high"
+    assert task.preferred_time == "08:00"
+    assert task.due_date == date(2026, 1, 1)  # date survived the round trip

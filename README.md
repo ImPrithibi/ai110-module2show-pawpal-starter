@@ -167,6 +167,14 @@ Busy: 08:00–08:30 Walk, 09:00–09:15 Meds
   next slot for a 40-min task -> 09:15   (no gap fits; goes after Meds)
 ```
 
+### Challenge 2 — Data persistence
+
+Pets and tasks are saved to a local `data.json` file so they survive between runs.
+
+- **Files modified:** `pawpal_system.py` (added `to_dict`/`from_dict` on `Task`, `Pet`, and `Owner`, plus `Owner.save_to_json()` / `Owner.load_from_json()`), `app.py` (auto-loads `data.json` on startup; adds **Save to disk** / **Reload from disk** buttons in the sidebar), `.gitignore` (ignores the generated `data.json`).
+- **Workflow:** on launch the app restores the owner from `data.json` if it exists; clicking **Save to disk** serializes the current owner/pets/tasks; **Reload from disk** re-reads the file. The `Task.due_date` (a `datetime.date`) is stored as an ISO string and parsed back on load, so no external serialization library is needed — just a small custom dict conversion.
+- A `test_owner_json_round_trip` test confirms a saved owner reloads with identical pets, tasks, and dates.
+
 ## 🎬 Demo Walkthrough
 
 ### Main UI features

@@ -7,7 +7,8 @@ app; the Streamlit UI in app.py connects to it later.
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field, replace
+import json
+from dataclasses import asdict, dataclass, field, replace
 from datetime import date, timedelta
 
 # How far ahead each recurrence rule schedules the next occurrence.
@@ -57,6 +58,20 @@ class Task:
             return None
         return replace(self, completed=False, due_date=self.due_date + delta)
 
+    def to_dict(self) -> dict:
+        """Convert to a JSON-safe dict (date is stored as an ISO string)."""
+        data = asdict(self)
+        data["due_date"] = self.due_date.isoformat()
+        return data
+
+    @classmethod
+    def from_dict(cls, data: dict) -> Task:
+        """Rebuild a Task from its dict form, parsing the ISO due_date back to a date."""
+        data = dict(data)
+        if isinstance(data.get("due_date"), str):
+            data["due_date"] = date.fromisoformat(data["due_date"])
+        return cls(**data)
+
 
 @dataclass
 class Pet:
@@ -71,6 +86,28 @@ class Pet:
     def add_task(self, task: Task) -> None:
         """Attach a care task to this pet."""
         self.tasks.append(task)
+
+    def to_dict(self) -> dict:
+        """Convert this pet and its tasks to a JSON-safe dict."""
+        return {
+            "name": self.name,
+            "species": self.species,
+            "breed": self.breed,
+            "age_years": self.age_years,
+            "tasks": [t.to_dict() for t in self.tasks],
+        }
+
+    @classmethod
+    def from_dict(cls, data: dict) -> Pet:
+        """Rebuild a Pet (and its tasks) from its dict form."""
+        pet = cls(
+            name=data["name"],
+            species=data["species"],
+            breed=data.get("breed", ""),
+            age_years=data.get("age_years", 0),
+        )
+        pet.tasks = [Task.from_dict(t) for t in data.get("tasks", [])]
+        return pet
 
 
 class Owner:
@@ -112,6 +149,37 @@ class Owner:
         for pet in self.pets:
             tasks.extend(pet.tasks)
         return tasks
+
+    def to_dict(self) -> dict:
+        """Convert the owner, pets, and tasks into a JSON-safe dict."""
+        return {
+            "name": self.name,
+            "available_minutes": self.available_minutes,
+            "preferred_start": self.preferred_start,
+            "pets": [pet.to_dict() for pet in self.pets],
+        }
+
+    @classmethod
+    def from_dict(cls, data: dict) -> Owner:
+        """Rebuild a full Owner (with pets and tasks) from its dict form."""
+        owner = cls(
+            name=data["name"],
+            available_minutes=data.get("available_minutes", 120),
+            preferred_start=data.get("preferred_start", "08:00"),
+        )
+        owner.pets = [Pet.from_dict(p) for p in data.get("pets", [])]
+        return owner
+
+    def save_to_json(self, path: str = "data.json") -> None:
+        """Persist this owner (and all pets/tasks) to a JSON file."""
+        with open(path, "w", encoding="utf-8") as f:
+            json.dump(self.to_dict(), f, indent=2)
+
+    @classmethod
+    def load_from_json(cls, path: str = "data.json") -> Owner:
+        """Load an owner (with pets/tasks) from a JSON file written by save_to_json."""
+        with open(path, encoding="utf-8") as f:
+            return cls.from_dict(json.load(f))
 
 
 @dataclass
