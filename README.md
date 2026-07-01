@@ -87,19 +87,39 @@ Total free time remaining: 50 min.
 
 ## 🧪 Testing PawPal+
 
-```bash
-# Run the full test suite:
-pytest
+Run the automated test suite from the project root:
 
-# Run with coverage:
-pytest --cov
+```bash
+python -m pytest
 ```
+
+The suite (`tests/test_pawpal.py`) covers:
+
+- **Task basics** — `mark_complete()` flips completion status; adding a task grows a pet's task list.
+- **Owner aggregation** — `all_tasks()` spans multiple pets; adding a task to an unknown pet raises a clear error.
+- **Sorting** — `sort_by_time()` returns tasks in chronological order and pushes untimed tasks last.
+- **Filtering** — `filter_by_status()` drops completed tasks; `filter_by_pet()` narrows to one pet.
+- **Recurrence** — completing a daily task creates a fresh task due the next day; weekly advances 7 days; a one-off task creates nothing.
+- **Conflict detection** — duplicate `preferred_time` slots are flagged; distinct times are not.
+- **Daily plan / edge cases** — `build_plan()` respects the time budget; an empty task list yields an empty plan instead of an error.
 
 Sample test output:
 
 ```
-# Paste your pytest output here
+============================= test session starts ==============================
+platform darwin -- Python 3.12.4, pytest-9.1.1, pluggy-1.6.0
+collected 15 items
+
+tests/test_pawpal.py ...............                                     [100%]
+
+============================== 15 passed in 0.01s ==============================
 ```
+
+**Confidence level: ⭐⭐⭐⭐☆ (4/5).** All 15 tests pass and cover every core
+behavior including edge cases (no tasks, untimed tasks, duplicate slots). One
+star is held back because conflict detection only catches exact time-slot
+matches (not overlapping durations), and `build_plan` uses sequential rather
+than preferred-time placement — see reflection §2b.
 
 ## 📐 Smarter Scheduling
 
