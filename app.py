@@ -126,7 +126,7 @@ if st.button("Generate schedule", type="primary"):
                 for item in plan
             ]
         )
-        conflicts = scheduler.detect_conflicts(plan)
+        conflicts = scheduler.detect_conflicts(due_today)
         if conflicts:
             for warning in conflicts:
                 st.error(f"⚠️ {warning}")

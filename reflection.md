@@ -36,8 +36,9 @@ Relationships: an Owner *has many* Pets, a Pet *has many* Tasks, and the Schedul
 
 **b. Tradeoffs**
 
-- Describe one tradeoff your scheduler makes.
-- Why is that tradeoff reasonable for this scenario?
+One deliberate tradeoff: **conflict detection only flags *exact* `preferred_time` matches, not overlapping durations.** If a 30-minute walk is set for 08:00 and a 10-minute feeding is set for 08:15, `Scheduler.detect_conflicts` will *not* warn, even though they actually overlap in real time — it only fires when two tasks claim the identical "HH:MM" slot.
+
+This is reasonable for the scenario because most pet owners think in round, distinct time slots ("morning walk at 8, feeding at 8:30"), so exact-match catches the common mistake of double-booking a slot while keeping the logic simple, fast (a single dictionary pass), and easy to explain. A second, related tradeoff is that `build_plan` lays tasks out *sequentially by priority* from the day's start rather than honoring each task's `preferred_time` — it optimizes for "fit the most important tasks into the available budget" over "put each task at its exact wished-for time." Full interval-overlap detection and preferred-time placement would be the natural next iteration if the app needed calendar-grade accuracy.
 
 ---
 

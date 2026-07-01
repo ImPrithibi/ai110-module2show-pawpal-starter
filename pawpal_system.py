@@ -7,7 +7,11 @@ app; the Streamlit UI in app.py connects to it later.
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
+from datetime import date, timedelta
+
+# How far ahead each recurrence rule schedules the next occurrence.
+RECURRENCE_DELTAS = {"daily": timedelta(days=1), "weekly": timedelta(weeks=1)}
 
 # Ordering used to rank tasks; higher number = more important.
 PRIORITY_ORDER = {"low": 1, "medium": 2, "high": 3}
@@ -36,6 +40,7 @@ class Task:
     recurrence: str = "daily"          # e.g. "daily", "weekly", "once"
     preferred_time: str | None = None  # optional "HH:MM" the owner would like
     completed: bool = False            # completion status
+    due_date: date = field(default_factory=date.today)  # the day this task is due
 
     def priority_rank(self) -> int:
         """Return a sortable integer for this task's priority (high = 3)."""
@@ -44,6 +49,13 @@ class Task:
     def mark_complete(self) -> None:
         """Mark this task as done."""
         self.completed = True
+
+    def next_occurrence(self) -> Task | None:
+        """Return a fresh (uncompleted) copy due on the next date, or None if one-off."""
+        delta = RECURRENCE_DELTAS.get(self.recurrence)
+        if delta is None:  # "once" or unknown recurrence: nothing to reschedule
+            return None
+        return replace(self, completed=False, due_date=self.due_date + delta)
 
 
 @dataclass
@@ -135,16 +147,39 @@ class Scheduler:
             key=lambda t: (-t.priority_rank(), t.duration_minutes),
         )
 
+    def sort_by_time(self, tasks: list[Task]) -> list[Task]:
+        """Order tasks chronologically by preferred_time; untimed tasks go last."""
+        return sorted(
+            tasks,
+            key=lambda t: _to_minutes(t.preferred_time) if t.preferred_time else 24 * 60,
+        )
+
+    def filter_by_status(self, tasks: list[Task], completed: bool = False) -> list[Task]:
+        """Return only the tasks whose completed flag matches `completed`."""
+        return [t for t in tasks if t.completed == completed]
+
+    def filter_by_pet(self, owner: Owner, pet_name: str) -> list[Task]:
+        """Return the tasks belonging to a single pet (empty if the pet is unknown)."""
+        pet = owner.find_pet(pet_name)
+        return list(pet.tasks) if pet else []
+
     def expand_recurring(self, tasks: list[Task], day: str = "today") -> list[Task]:
         """Return the tasks that are due on `day` (daily tasks always apply)."""
         return [t for t in tasks if t.recurrence in ("daily", "once")]
 
+    def mark_task_complete(self, task: Task) -> Task | None:
+        """Mark a task done and return its auto-generated next occurrence (None if one-off)."""
+        task.mark_complete()
+        return task.next_occurrence()
+
     def build_plan(self, tasks: list[Task]) -> list[ScheduledTask]:
-        """Greedily select tasks that fit the budget and time-order them."""
+        """Greedily select the highest-priority tasks that fit the budget, time-ordered."""
         plan: list[ScheduledTask] = []
         cursor = _to_minutes(self.day_start)
         used = 0
         for task in self.sort_tasks(tasks):
+            if task.completed:
+                continue  # already done today
             if used + task.duration_minutes > self.available_minutes:
                 continue  # skip tasks that don't fit the remaining budget
             start = cursor
@@ -158,15 +193,20 @@ class Scheduler:
             used += task.duration_minutes
         return plan
 
-    def detect_conflicts(self, plan: list[ScheduledTask]) -> list[str]:
-        """Return warnings for any scheduled tasks whose times overlap."""
+    def detect_conflicts(self, tasks: list[Task]) -> list[str]:
+        """Warn when two tasks want the same preferred_time slot (exact match)."""
         warnings: list[str] = []
-        ordered = sorted(plan, key=lambda s: _to_minutes(s.start_time))
-        for earlier, later in zip(ordered, ordered[1:]):
-            if _to_minutes(later.start_time) < _to_minutes(earlier.end_time):
+        seen: dict[str, str] = {}  # preferred_time -> first task title claiming it
+        for task in tasks:
+            if not task.preferred_time:
+                continue  # untimed tasks can't conflict
+            if task.preferred_time in seen:
                 warnings.append(
-                    f"'{later.task.title}' overlaps with '{earlier.task.title}'"
+                    f"Time conflict at {task.preferred_time}: "
+                    f"'{seen[task.preferred_time]}' and '{task.title}'"
                 )
+            else:
+                seen[task.preferred_time] = task.title
         return warnings
 
     def explain_plan(self, plan: list[ScheduledTask]) -> str:
