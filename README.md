@@ -22,6 +22,17 @@ Your final app should:
 - Display the plan clearly (and ideally explain the reasoning)
 - Include tests for the most important scheduling behaviors
 
+## ✨ Features
+
+- **Owner & pet management** — one owner manages multiple pets, each with its own task list (`Owner`, `Pet`).
+- **Rich tasks** — every task tracks duration, priority, category, recurrence, an optional preferred time, completion status, and a due date (`Task`).
+- **Sorting by time** — tasks display in chronological order; untimed tasks fall to the end (`Scheduler.sort_by_time`).
+- **Filtering** — narrow tasks by completion status or by a single pet (`Scheduler.filter_by_status`, `filter_by_pet`).
+- **Budget-aware daily plan** — greedily selects the highest-priority tasks that fit the owner's time budget, lays them out from the day's start, and explains its reasoning (`Scheduler.build_plan`, `explain_plan`).
+- **Conflict warnings** — flags tasks that claim the same preferred time slot without crashing (`Scheduler.detect_conflicts`).
+- **Daily / weekly recurrence** — completing a recurring task auto-creates its next occurrence with the due date advanced via `datetime.timedelta` (`Scheduler.mark_task_complete`, `Task.next_occurrence`).
+- **Streamlit UI** — add pets/tasks, see live per-pet task tables and conflict banners, and generate today's plan, all backed by `st.session_state` persistence.
+
 ## Getting started
 
 ### Setup
@@ -132,14 +143,67 @@ The scheduling intelligence lives in the `Scheduler` class in `pawpal_system.py`
 | Conflict handling | `Scheduler.detect_conflicts()` | Flags tasks that claim the same `preferred_time` slot and returns warning strings (never raises) — see reflection §2b for the exact-match tradeoff |
 | Recurring tasks | `Scheduler.mark_task_complete()`, `Task.next_occurrence()` | Completing a `daily`/`weekly` task auto-creates the next occurrence with `due_date` advanced via `datetime.timedelta` (`once` tasks return `None`) |
 
-## 📸 Demo Walkthrough
+## 🎬 Demo Walkthrough
 
-Describe your app in numbered steps so a reader can follow along without watching a video:
+### Main UI features
 
-1. <!-- Describe this step -->
-2. <!-- Describe this step -->
-3. <!-- Describe this step -->
-4. <!-- Describe this step -->
-5. <!-- Add more steps as needed -->
+Launch the app with `streamlit run app.py`. The page lets a pet owner:
+
+- **Set owner & day settings** — name, daily time budget (minutes), and preferred start time. Data persists across reruns via `st.session_state`.
+- **Add a pet** — name, species, breed, age (duplicate names are rejected).
+- **Add a task** — pick the pet, then set title, duration, category, priority, recurrence, and an optional preferred time.
+- **See per-pet task tables** — each pet's tasks render in chronological order, with a completion column and a warning banner if any two tasks share the same time slot.
+- **Generate today's plan** — a budget-aware, priority-first schedule with start/end times, a conflict check, and an expandable "Why this plan?" explanation.
+
+### Example workflow
+
+1. Set the time budget to `90` min and start time to `08:00`.
+2. Add a pet: **Mochi** (dog).
+3. Add tasks for Mochi: **Morning walk** (30 min, high, 08:00) and **Breakfast** (10 min, high, 08:00).
+4. Notice the ⚠️ conflict banner — both tasks want the 08:00 slot.
+5. Add **Play / enrichment** (20 min, low, 17:00) and click **Generate schedule**.
+6. Read the ordered plan and the "Why this plan?" reasoning; complete a daily task to roll it over to tomorrow.
+
+### Key Scheduler behaviors shown
+
+- **Sorting** — tasks appear in chronological order (`sort_by_time`).
+- **Filtering** — completed tasks are dropped from the plan (`filter_by_status`).
+- **Conflict warnings** — duplicate time slots are flagged, not crashed (`detect_conflicts`).
+- **Budget planning + explanation** — highest-priority tasks that fit the budget are chosen and explained (`build_plan`, `explain_plan`).
+- **Recurrence** — completing a daily/weekly task auto-creates the next occurrence (`mark_task_complete`).
+
+### Sample CLI output (`python main.py`)
+
+```
+🕒 Tasks sorted by time:
+  • 08:00  Morning walk [high]
+  • 08:00  Breakfast [high]
+  • 12:00  Litter scoop [medium]
+  • 17:00  Play / enrichment [low]
+
+🔎 Only Mochi's tasks:
+  • 08:00  Morning walk [high]
+  • 08:00  Breakfast [high]
+
+⚠️  Conflict check:
+   - Time conflict at 08:00: 'Morning walk' and 'Breakfast'
+
+🔁 Recurring task rollover:
+   Completed 'Morning walk' (due 2026-06-30).
+   Auto-created next 'Morning walk' due 2026-07-01.
+
+🐾 Today's Schedule for Jordan
+   (time budget: 90 min, start: 08:00)
+------------------------------------------------
+  08:00–08:10  Breakfast (10 min) [high]
+  08:10–08:20  Litter scoop (10 min) [medium]
+  08:20–08:40  Play / enrichment (20 min) [low]
+------------------------------------------------
+Here is the reasoning behind today's plan:
+  - 08:00: Breakfast — high priority; fits with 80 min budget left
+  - 08:10: Litter scoop — medium priority; fits with 70 min budget left
+  - 08:20: Play / enrichment — low priority; fits with 50 min budget left
+Total free time remaining: 50 min.
+```
 
 **Screenshot or video** *(optional)*: <!-- Insert a screenshot or link to a demo video here -->

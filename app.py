@@ -68,6 +68,7 @@ else:
         with tcol3:
             priority = st.selectbox("Priority", ["low", "medium", "high"], index=2)
             recurrence = st.selectbox("Recurrence", ["daily", "weekly", "once"])
+            preferred_time = st.text_input("Preferred time (HH:MM, optional)", value="08:00")
         if st.form_submit_button("Add task"):
             owner.add_task(
                 which_pet,
@@ -77,6 +78,7 @@ else:
                     priority=priority,
                     category=category,
                     recurrence=recurrence,
+                    preferred_time=preferred_time.strip() or None,
                 ),
             )
             st.success(f"Added '{title}' for {which_pet}.")
@@ -84,6 +86,17 @@ else:
 # --- Current pets & tasks -------------------------------------------------
 st.divider()
 st.subheader("Your pets")
+
+# One scheduler drives both the live views and the generated plan.
+scheduler = Scheduler(available_minutes=owner.available_minutes, day_start=owner.preferred_start)
+
+# Surface time conflicts across ALL tasks up front, so the owner sees them
+# before generating a plan.
+all_conflicts = scheduler.detect_conflicts(owner.all_tasks())
+if all_conflicts:
+    for warning in all_conflicts:
+        st.warning(f"⚠️ {warning}")
+
 if not owner.pets:
     st.info("No pets yet.")
 for pet in owner.pets:
@@ -92,13 +105,15 @@ for pet in owner.pets:
             st.table(
                 [
                     {
+                        "Time": t.preferred_time or "—",
                         "Task": t.title,
                         "Duration (min)": t.duration_minutes,
                         "Priority": t.priority,
                         "Category": t.category,
                         "Recurrence": t.recurrence,
+                        "Done": "✓" if t.completed else "",
                     }
-                    for t in pet.tasks
+                    for t in scheduler.sort_by_time(pet.tasks)  # chronological
                 ]
             )
         else:
@@ -108,13 +123,14 @@ for pet in owner.pets:
 st.divider()
 st.subheader("Today's plan")
 if st.button("Generate schedule", type="primary"):
-    scheduler = Scheduler(available_minutes=owner.available_minutes, day_start=owner.preferred_start)
     due_today = scheduler.expand_recurring(owner.all_tasks())
-    plan = scheduler.build_plan(due_today)
+    active = scheduler.filter_by_status(due_today, completed=False)  # skip done tasks
+    plan = scheduler.build_plan(active)
 
     if not plan:
         st.warning("No tasks fit the available time budget. Add tasks or increase the budget.")
     else:
+        st.success(f"Planned {len(plan)} task(s) within your {owner.available_minutes}-min budget.")
         st.table(
             [
                 {
@@ -126,11 +142,13 @@ if st.button("Generate schedule", type="primary"):
                 for item in plan
             ]
         )
-        conflicts = scheduler.detect_conflicts(due_today)
+
+        conflicts = scheduler.detect_conflicts(active)
         if conflicts:
             for warning in conflicts:
-                st.error(f"⚠️ {warning}")
+                st.warning(f"⚠️ {warning} — the plan still runs tasks back-to-back; consider adjusting times.")
         else:
-            st.success("No scheduling conflicts.")
-        st.markdown("**Why this plan?**")
-        st.text(scheduler.explain_plan(plan))
+            st.success("✅ No scheduling conflicts.")
+
+        with st.expander("Why this plan?", expanded=True):
+            st.text(scheduler.explain_plan(plan))
