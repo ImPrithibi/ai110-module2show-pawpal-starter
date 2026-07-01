@@ -60,20 +60,20 @@ exercises sorting, filtering, conflict detection, recurring rollover, and the pl
 
 ```
 🕒 Tasks sorted by time:
-  • 08:00  Morning walk [high]
-  • 08:00  Breakfast [high]
-  • 12:00  Litter scoop [medium]
-  • 17:00  Play / enrichment [low]
+  ▫️ 08:00  🚶 Morning walk [high]
+  ▫️ 08:00  🍽️ Breakfast [high]
+  ▫️ 12:00  🧼 Litter scoop [medium]
+  ▫️ 17:00  🧸 Play / enrichment [low]
 
 🔎 Only Mochi's tasks:
-  • 08:00  Morning walk [high]
-  • 08:00  Breakfast [high]
+  ▫️ 08:00  🚶 Morning walk [high]
+  ▫️ 08:00  🍽️ Breakfast [high]
 
 🔎 Incomplete tasks only:
-  • 08:00  Morning walk [high]
-  • 08:00  Breakfast [high]
-  • 17:00  Play / enrichment [low]
-  • 12:00  Litter scoop [medium]
+  ▫️ 08:00  🚶 Morning walk [high]
+  ▫️ 08:00  🍽️ Breakfast [high]
+  ▫️ 17:00  🧸 Play / enrichment [low]
+  ▫️ 12:00  🧼 Litter scoop [medium]
 
 ⚠️  Conflict check:
    - Time conflict at 08:00: 'Morning walk' and 'Breakfast'
@@ -84,11 +84,16 @@ exercises sorting, filtering, conflict detection, recurring rollover, and the pl
 
 🐾 Today's Schedule for Jordan
    (time budget: 90 min, start: 08:00)
-------------------------------------------------
-  08:00–08:10  Breakfast (10 min) [high]
-  08:10–08:20  Litter scoop (10 min) [medium]
-  08:20–08:40  Play / enrichment (20 min) [low]
-------------------------------------------------
+╭─────────────┬─────────────────────┬──────────┬────────────╮
+│ When        │ Task                │ Length   │ Priority   │
+├─────────────┼─────────────────────┼──────────┼────────────┤
+│ 08:00–08:10 │ 🍽️ Breakfast        │ 10 min   │ high       │
+├─────────────┼─────────────────────┼──────────┼────────────┤
+│ 08:10–08:20 │ 🧼 Litter scoop      │ 10 min   │ medium     │
+├─────────────┼─────────────────────┼──────────┼────────────┤
+│ 08:20–08:40 │ 🧸 Play / enrichment │ 20 min   │ low        │
+╰─────────────┴─────────────────────┴──────────┴────────────╯
+
 Here is the reasoning behind today's plan:
   - 08:00: Breakfast — high priority; fits with 80 min budget left
   - 08:10: Litter scoop — medium priority; fits with 70 min budget left
@@ -175,6 +180,10 @@ Pets and tasks are saved to a local `data.json` file so they survive between run
 - **Workflow:** on launch the app restores the owner from `data.json` if it exists; clicking **Save to disk** serializes the current owner/pets/tasks; **Reload from disk** re-reads the file. The `Task.due_date` (a `datetime.date`) is stored as an ISO string and parsed back on load, so no external serialization library is needed — just a small custom dict conversion.
 - A `test_owner_json_round_trip` test confirms a saved owner reloads with identical pets, tasks, and dates.
 
+### Challenge 4 — Professional CLI formatting
+
+The CLI demo (`main.py`) uses the [`tabulate`](https://pypi.org/project/tabulate/) library to render the daily plan as a rounded-grid table, and a `CATEGORY_EMOJI` map (`emoji_for()`) to prefix each task with an icon for its type (🚶 walk, 🍽️ feeding, 💊 meds, 🧼 grooming, 🧸 enrichment). Completion status shows as ✅ / ▫️. See the sample output above. `tabulate>=0.9` is listed in `requirements.txt`.
+
 ## 🎬 Demo Walkthrough
 
 ### Main UI features
@@ -208,14 +217,10 @@ Launch the app with `streamlit run app.py`. The page lets a pet owner:
 
 ```
 🕒 Tasks sorted by time:
-  • 08:00  Morning walk [high]
-  • 08:00  Breakfast [high]
-  • 12:00  Litter scoop [medium]
-  • 17:00  Play / enrichment [low]
-
-🔎 Only Mochi's tasks:
-  • 08:00  Morning walk [high]
-  • 08:00  Breakfast [high]
+  ▫️ 08:00  🚶 Morning walk [high]
+  ▫️ 08:00  🍽️ Breakfast [high]
+  ▫️ 12:00  🧼 Litter scoop [medium]
+  ▫️ 17:00  🧸 Play / enrichment [low]
 
 ⚠️  Conflict check:
    - Time conflict at 08:00: 'Morning walk' and 'Breakfast'
@@ -226,11 +231,16 @@ Launch the app with `streamlit run app.py`. The page lets a pet owner:
 
 🐾 Today's Schedule for Jordan
    (time budget: 90 min, start: 08:00)
-------------------------------------------------
-  08:00–08:10  Breakfast (10 min) [high]
-  08:10–08:20  Litter scoop (10 min) [medium]
-  08:20–08:40  Play / enrichment (20 min) [low]
-------------------------------------------------
+╭─────────────┬─────────────────────┬──────────┬────────────╮
+│ When        │ Task                │ Length   │ Priority   │
+├─────────────┼─────────────────────┼──────────┼────────────┤
+│ 08:00–08:10 │ 🍽️ Breakfast        │ 10 min   │ high       │
+├─────────────┼─────────────────────┼──────────┼────────────┤
+│ 08:10–08:20 │ 🧼 Litter scoop      │ 10 min   │ medium     │
+├─────────────┼─────────────────────┼──────────┼────────────┤
+│ 08:20–08:40 │ 🧸 Play / enrichment │ 20 min   │ low        │
+╰─────────────┴─────────────────────┴──────────┴────────────╯
+
 Here is the reasoning behind today's plan:
   - 08:00: Breakfast — high priority; fits with 80 min budget left
   - 08:10: Litter scoop — medium priority; fits with 70 min budget left

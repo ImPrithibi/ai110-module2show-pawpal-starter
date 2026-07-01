@@ -7,7 +7,24 @@ recurring tasks, and the generated daily plan.
 Run with:  python main.py
 """
 
+from tabulate import tabulate
+
 from pawpal_system import Owner, Pet, Scheduler, Task
+
+# Emoji per task category, for friendlier CLI output.
+CATEGORY_EMOJI = {
+    "walk": "🚶",
+    "feeding": "🍽️",
+    "meds": "💊",
+    "grooming": "🧼",
+    "enrichment": "🧸",
+    "general": "📋",
+}
+
+
+def emoji_for(category: str) -> str:
+    """Return an emoji for a task category (falls back to a generic icon)."""
+    return CATEGORY_EMOJI.get(category, "📋")
 
 
 def build_demo_owner() -> Owner:
@@ -36,9 +53,9 @@ def print_tasks(heading: str, tasks: list[Task]) -> None:
     """Print a labelled list of tasks with their time, priority, and status."""
     print(f"\n{heading}")
     for t in tasks:
-        status = "✓" if t.completed else "•"
+        status = "✅" if t.completed else "▫️"
         when = t.preferred_time or "  —  "
-        print(f"  {status} {when}  {t.title} [{t.priority}]")
+        print(f"  {status} {when}  {emoji_for(t.category)} {t.title} [{t.priority}]")
 
 
 def main() -> None:
@@ -78,10 +95,17 @@ def main() -> None:
     plan = scheduler.build_plan(scheduler.filter_by_status(tasks, completed=False))
     print(f"\n🐾 Today's Schedule for {owner.name}")
     print(f"   (time budget: {owner.available_minutes} min, start: {owner.preferred_start})")
-    print("-" * 48)
-    for item in plan:
-        print(f"  {item}")
-    print("-" * 48)
+    rows = [
+        [
+            f"{item.start_time}–{item.end_time}",
+            f"{emoji_for(item.task.category)} {item.task.title}",
+            f"{item.task.duration_minutes} min",
+            item.task.priority,
+        ]
+        for item in plan
+    ]
+    print(tabulate(rows, headers=["When", "Task", "Length", "Priority"], tablefmt="rounded_grid"))
+    print()
     print(scheduler.explain_plan(plan))
     print()
 
